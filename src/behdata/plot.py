@@ -1,9 +1,10 @@
 import numpy as np
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 import seaborn as sns
 
-#%%
+
 color_names = [
     "windows blue",
     "red",
@@ -40,6 +41,15 @@ def make_cmap(number_colors, cmap="cool"):
     return colors
 
 
+def make_discrete_cmap(num_colors):
+    colors = sns.xkcd_palette(color_names[:5])
+    cmap = mpl.colors.LinearSegmentedColormap.from_list(
+        'Custom cmap', colors, num_colors)
+    bounds = np.linspace(0, num_colors, num_colors + 1)
+    norm = mpl.colors.BoundaryNorm(bounds, num_colors + 1)
+    return cmap, bounds, norm
+
+
 def gradient_cmap(gcolors, nsteps=256, bounds=None):
     """
     Make a colormap that interpolates between a set of colors
@@ -69,6 +79,7 @@ def gradient_cmap(gcolors, nsteps=256, bounds=None):
 
     cmap = LinearSegmentedColormap("grad_colormap", cdict, nsteps)
     return cmap
+
 
 
 def state_correlation(
@@ -140,7 +151,5 @@ def state_correlation(
         )
     else:
         plt.show()
-    #plt.close()
+    plt.close()
     return
-
-#%%
