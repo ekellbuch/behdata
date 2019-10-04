@@ -3,7 +3,7 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 import seaborn as sns
-
+import os
 
 color_names = [
     "windows blue",
@@ -81,9 +81,8 @@ def gradient_cmap(gcolors, nsteps=256, bounds=None):
     return cmap
 
 
-
 def state_correlation(
-        z1, z2, k1=None, k2=None, figsize=None, OUTDIR="", FIGURE_STORE=False, title=""
+        z1, z2, k1=None, k2=None, alpha=0.9,figsize=None, OUTDIR="", FIGURE_STORE=False, title=""
 ):
     """
     Calculate state correlation
@@ -105,7 +104,7 @@ def state_correlation(
             C[i, j] = np.logical_and(z1 == i, z2 == j).sum()
 
     # C_ij normalized (check for non-used states)
-    C_pr = C / C.sum(0)
+    C_pr = C / C.sum(0, keepdims=True)
     # C_pr = C.copy()
     # for col in np.arange(k2):
     #    if C[:, col].sum() != 0:
@@ -121,7 +120,7 @@ def state_correlation(
     Cpr = C_pr[:, new_l]
 
 
-    im = ax.imshow(Cpr, cmap="Reds", vmin=Cpr.min(), vmax=Cpr.max())
+    im = ax.imshow(Cpr, cmap="Reds", vmin=Cpr.min(), vmax=Cpr.max(), alpha=alpha)
     ax.set_xticks([])
     ax.set_xticklabels([])
     ax.set_yticks([])
@@ -130,7 +129,7 @@ def state_correlation(
     ax.set_xlabel(r"$K = %d$" % k2)
 
     divider = make_axes_locatable(ax)
-    cax = divider.append_axes("bottom", size="5%", pad=0.5)
+    cax = divider.append_axes("bottom", size="5%", pad=0.25)
     cbar = plt.colorbar(
         im,
         cax=cax,

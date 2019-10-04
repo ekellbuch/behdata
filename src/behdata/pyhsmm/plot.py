@@ -193,7 +193,7 @@ def plot_vector_field_dynamics_formatted(
                             center[1],
                             'o',
                             color=colors[state % len(colors)],
-                            markersize=4)
+                            markersize=6)
                 except:
                     print("Dynamics are not invertible!")
 
@@ -481,7 +481,8 @@ def plot_vector_field_dynamics_datas_formatted(
                         center = -np.linalg.solve(As-np.eye(As.shape[1]), bs)
                         ax.plot(center[0],
                                 center[1], 'o', color=colors[state % len(colors)],
-                                markersize=4)
+                                markersize=5
+                               )
                     except:
                         print("Dynamics are not invertible!")
 

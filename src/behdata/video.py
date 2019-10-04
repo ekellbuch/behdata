@@ -87,8 +87,8 @@ def get_discrete_chunks(states, include_edges=True, max_state=0):
     return indexing_list
 
 
-
-def zoom_in_coordinates(clip, x, y, rectangle_size=50):
+def zoom_in_coordinates_v0(clip, x, y, rectangle_size=50):
+    # deprecated for numpy compatibility
     nx, ny = clip.size
     fps = clip.fps
 
@@ -105,6 +105,56 @@ def zoom_in_coordinates(clip, x, y, rectangle_size=50):
 
         if index % 1000 == 0:
             print("\nTime frame @ {} [sec] is {} [idx]\n".format(t, index))
+
+        # get centers of window: x_mean, y_mean
+        xc = x[index]
+        yc = y[index]
+
+        # get window around centers
+        # x: xc - r : xc + r
+        xi = slice(max(xc - rectangle_size, 0), min(xc + rectangle_size, nx - 1))
+        yi = slice(max(yc - rectangle_size, 0), min(yc + rectangle_size, ny - 1))
+
+        # re-calculate center
+        xc = xc - max(xc - rectangle_size, 0)
+        yc = yc - max(yc - rectangle_size, 0)
+
+        # build a frame with 3 color channels
+        frame_region = np.zeros((2*rectangle_size, 2*rectangle_size, 3))
+
+        # fill frame right corner matches right corner
+        frame_region[:int(yi.stop-yi.start), :int(xi.stop-xi.start), :] = frame[yi, xi, :]
+
+        rr, cc = circle(yc, xc, dotsize, shape=(2*rectangle_size, 2*rectangle_size))
+        frame_region[rr, cc, :] = (1, 1, 0)
+
+        return frame_region
+
+    clip_cropped = clip.fl(zoom_in)
+
+    return clip_cropped
+
+
+def zoom_in_coordinates(clip, x, y, rectangle_size=50):
+    nx, ny = clip.size
+    fps = clip.fps
+    # test: compare clip.duration and duration of x and y
+    assert clip.duration*fps >= len(x)
+    assert clip.duration*fps >= len(y)
+    
+    def zoom_in(get_frame, t, dotsize = 2, rectangle_size=rectangle_size):
+        # get frame a time t in seconds
+        image = get_frame(t)
+
+        # copy frame [ny x ny x N]
+        # N is the number of 3 color channels
+        frame = image.copy()
+
+        # convert t from secs to samples
+        index = int(np.round(t * 1.0 * fps))
+        #print('index {}, time {}'.format(index, t))
+        if index % 1000 == 0:
+            print("Time frame @ {} [sec] is {} [idx]\n".format(t, index))
 
         # get centers of window: x_mean, y_mean
         xc = x[index]
@@ -205,7 +255,7 @@ def make_syllables_movie(
         ax.set_yticks([])
         ax.set_xticks([])
         if i < actual_K:
-            ax.set_title("Syllable " + str(i), fontsize=16)
+            ax.set_title("Syllable " + str(i+1), fontsize=15)
 
         else:
             ax.set_axis_off()

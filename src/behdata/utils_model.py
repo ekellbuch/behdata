@@ -173,4 +173,69 @@ def fit_gaussian(data):
 
     # Calculate log pdf
     reference = Y2.logpdf(test_aus)
+    
+    #x, y = np.mgrid[-5:5:.01, -5:5:.01]
+    #test_pdf_xy = Y2.pdf(np.dstack((x,y)))
+    #plt.plot(test_aus[:,0],test_aus[:,1],'k.', markersize=0.5, alpha=0.01)
+    #plt.contourf(x, y, test_pdf_xy, cmap='YlGnBu', alpha=0.5)
+    #plt.xlim([-2.5,2.5])
+    #plt.ylim([-2.5,2.5])
+    #plt.show()
     return reference
+
+
+def state_transition_probabilities_ngram(state_seq, K, ngram=1):
+    from itertools import product
+    combinations_ = list(product(np.arange(K), repeat=ngram))
+    num_combination = len(combinations_)
+
+    state_transition_counts = np.zeros((K, num_combination))
+    for k in range(K):
+        # do not include last n states in seq
+        idx_ = np.argwhere(state_seq[:-ngram] == k)
+        # search in all combination pair
+        for jj, combination_ in enumerate(combinations_):
+            # test each combination gram
+            for ii, comb_ in enumerate(combination_):
+                # test for each index
+                for local_idx in idx_:
+                    if state_seq[local_idx + ii + 1] == comb_:
+                        state_transition_counts[k, jj] += 1
+
+    state_transition_counts /= state_transition_counts.sum(1, keepdims=True)
+    return state_transition_counts
+
+
+def state_transition_probabilities(state_seq, K):
+    """
+    # bigram probabilities: state transition probabilities
+    """
+    state_transition_counts = np.zeros((K, K))
+
+    for k in range(K):
+        # do not include last state seq
+        idx_ = np.argwhere(state_seq[:-1] == k)
+        # do not include last state seq
+        next_state, next_state_count = np.unique(state_seq[idx_ + 1], return_counts=True)
+        state_transition_counts[k, next_state] = next_state_count
+
+    state_transition_counts /= state_transition_counts.sum(1, keepdims=True)
+    return state_transition_counts
+
+
+def multiple_state_transition_probabilities(state_seq_list, K):
+    """
+    # bigram probabilities: state transition probabilities
+    """
+    state_transition_counts = np.zeros((K, K))
+
+    for k in range(K):
+        # do not include last state seq        
+        for state_seq in state_seq_list:
+            idx_ = np.argwhere(state_seq[:-1] == k)
+            # do not include last state seq
+            next_state, next_state_count = np.unique(state_seq[idx_ + 1], return_counts=True)
+            state_transition_counts[k, next_state] = next_state_count
+
+    state_transition_counts /= state_transition_counts.sum(1, keepdims=True)
+    return state_transition_counts
