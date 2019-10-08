@@ -1,4 +1,4 @@
-# behdata
+# Behdata
 
 Function to analyze behavioral data
 
