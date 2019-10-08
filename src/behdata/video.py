@@ -139,8 +139,8 @@ def zoom_in_coordinates(clip, x, y, rectangle_size=50):
     nx, ny = clip.size
     fps = clip.fps
     # test: compare clip.duration and duration of x and y
-    assert clip.duration*fps >= len(x)
-    assert clip.duration*fps >= len(y)
+    #assert clip.duration*fps >= len(x)
+    #assert clip.duration*fps >= len(y)
     
     def zoom_in(get_frame, t, dotsize = 2, rectangle_size=rectangle_size):
         # get frame a time t in seconds
