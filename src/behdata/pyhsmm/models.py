@@ -27,7 +27,7 @@ def relabel_model_z(model, index=0, plot_en=False):
 
 
 def fit_ar_pyhsmm_models(
-    datas,
+    train_datas,
     val_datas,
     test_datas,
     K=2,
@@ -45,16 +45,16 @@ def fit_ar_pyhsmm_models(
     Fit datasets for multiple values
     """
     npr.seed(seed)
-    assert (len(datas) > 0) and (type(datas) is list)
+    assert (len(train_datas) > 0) and (type(train_datas) is list)
     assert (len(val_datas) > 0) and (type(val_datas) is list)
     assert (len(test_datas) > 0) and (type(test_datas) is list)
 
     # Standard AR model (Scale resampling)
-    D_obs = datas[0].shape[1]
+    D_obs = train_datas[0].shape[1]
 
     def evalute_model(model):
         # train log log_likelihood
-        ll = model.log_likelihood()
+        train_ll = model.log_likelihood()
 
         # validation log log_likelihood
         val_pll = 0
@@ -66,7 +66,7 @@ def fit_ar_pyhsmm_models(
         for data in test_datas:
             test_pll += model.log_likelihood(data)
 
-        return ll, val_pll, test_pll
+        return train_ll, val_pll, test_pll
 
     # Construct a standard AR-HMM
     obs_hypers = dict(
@@ -78,7 +78,7 @@ def fit_ar_pyhsmm_models(
         affine=affine,
     )
 
-    obs_hypers = get_empirical_ar_params(datas, obs_hypers)
+    obs_hypers = get_empirical_ar_params(train_datas, obs_hypers)
     obs_distns = [ardistributions.AutoRegression(**obs_hypers) for _ in range(K)]
 
     # ----------------
@@ -98,7 +98,7 @@ def fit_ar_pyhsmm_models(
     # Add datasets
     # ----------------
 
-    for data in datas:
+    for data in train_datas:
         model.add_data(data)
 
     # ---------------------
@@ -129,6 +129,7 @@ def fit_ar_pyhsmm_models(
 
     # values at each timestep
     vals, timesteps = zip(*[sample(model) for _ in trange(N_iters)])
+    
     lls_train, lls_val, lls_test = \
             zip(*((init_val,) + vals))
 
@@ -138,11 +139,11 @@ def fit_ar_pyhsmm_models(
     z = [mm.stateseq for mm in model.states_list]
 
 
-    return model, lls_train, lls_train, lls_test, timestamps, z
+    return model, lls_train, lls_val, lls_test, timestamps, z
 
 
 def fit_ar_separate_trans_pyhsmm_models(
-    datas,
+    train_datas,
     val_datas,
     test_datas,
     K=2,
@@ -161,9 +162,10 @@ def fit_ar_separate_trans_pyhsmm_models(
     element in dictionary.
     """
     npr.seed(seed)
-    assert type(datas) is defaultdict
+    assert type(train_datas) is defaultdict
+    
     datas_all = []
-    for _, datalist in datas.items():
+    for _, datalist in train_datas.items():
         print(len(datalist))
         datas_all.extend(datalist)
 
@@ -179,13 +181,13 @@ def fit_ar_separate_trans_pyhsmm_models(
         val_pll = 0
         for data_id, data in val_datas.items():
             val_pll += model.log_likelihood(group_id=data_id,
-                                            data= data)
+                                            data=data)
 
         # Test log log_likelihood
         test_pll = 0
         for data_id, data in test_datas.items():
             test_pll += model.log_likelihood(group_id=data_id,
-                                             data= data)
+                                             data=data)
 
         return ll, val_pll, test_pll
 
@@ -222,12 +224,12 @@ def fit_ar_separate_trans_pyhsmm_models(
     # --------------
     # Add datasets
     # --------------
-    for group_id, datalist in datas.items():
+    for group_id, datalist in train_datas.items():
         for data in datalist:
             model.add_data(group_id=group_id, data=data)
 
     # free space for very large datasets
-    del datas
+    del train_datas
 
     # ---------------------
     # Initialize the states

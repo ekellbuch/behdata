@@ -6,7 +6,7 @@ from scipy.stats import multivariate_normal
 
 
 def split_train_test_multiple(
-    datas, datas2, chunk=5000, train_frac=0.7, val_frac=0.15, seed=0,verbose=True
+    datas, datas2, chunk=5000, train_frac=0.7, val_frac=0.15, seed=0, verbose=True
 ):
     """
     Split elements of lists (data and datas2) in chunks along the first
@@ -51,7 +51,7 @@ def split_train_test_multiple(
     # datas T x D
     # datas2 T x N
     
-    np.random.seed(seed)
+    npr.seed(seed)
     all_ys = []
     all_xs = []
 
@@ -71,20 +71,20 @@ def split_train_test_multiple(
         choices[int(train_frac * C) : int((train_frac + val_frac) * C)] = 1
         choices[int((train_frac + val_frac) * C) :] = 2
         # shuffle around the choices
-        choices = choices[np.random.permutation(C)]
+        choices = choices[npr.permutation(C)]
         all_choices.append(choices)
 
     all_choices = np.concatenate(all_choices)
-    get = lambda arr, chc: [x for x, c in zip(arr, all_choices) if c == chc]
+    get_arr = lambda arr, chc: [x for x, c in zip(arr, all_choices) if c == chc]
 
-    train_ys = get(all_ys, 0)
-    train_xs = get(all_xs, 0)
+    train_ys = get_arr(all_ys, 0)
+    train_xs = get_arr(all_xs, 0)
 
-    val_ys = get(all_ys, 1)
-    val_xs = get(all_xs, 1)
+    val_ys = get_arr(all_ys, 1)
+    val_xs = get_arr(all_xs, 1)
 
-    test_ys = get(all_ys, 2)
-    test_xs = get(all_xs, 2)
+    test_ys = get_arr(all_ys, 2)
+    test_xs = get_arr(all_xs, 2)
 
     if verbose:
         print("Len of train data is {}".format(len(train_ys)))
@@ -148,14 +148,14 @@ def create_schedule(param_ranges, verbose=False):
     return schedule
 
 
-def fit_gaussian(data):
+def multivariate_gaussian_fit(data, return_log=True):
     """
     Fit Multivariate Gaussian distribution to data
-    Outputs LL for entire sequence
+    Outputs MV class
     :param data: list of N arrays of dimensions T x D
         note arrays can have different first dimension (T)
         but must have the same second dimension (D)
-    :return: referece
+    :return: MV class froms scipy
     """
     # singular matrix will not be good w different datasets
     # test_data = (# series x # Dobs) x T
@@ -171,17 +171,10 @@ def fit_gaussian(data):
     # Fit multivariate normal
     Y2 = multivariate_normal(mean=mus, cov=stds, allow_singular=False)
 
-    # Calculate log pdf
-    reference = Y2.logpdf(test_aus)
-    
-    #x, y = np.mgrid[-5:5:.01, -5:5:.01]
-    #test_pdf_xy = Y2.pdf(np.dstack((x,y)))
-    #plt.plot(test_aus[:,0],test_aus[:,1],'k.', markersize=0.5, alpha=0.01)
-    #plt.contourf(x, y, test_pdf_xy, cmap='YlGnBu', alpha=0.5)
-    #plt.xlim([-2.5,2.5])
-    #plt.ylim([-2.5,2.5])
-    #plt.show()
-    return reference
+    if return_log:
+        return Y2.logpdf(test_aus)
+    else:
+        return Y2
 
 
 def state_transition_probabilities_ngram(state_seq, K, ngram=1):
