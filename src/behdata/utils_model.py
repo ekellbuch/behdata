@@ -199,36 +199,55 @@ def state_transition_probabilities_ngram(state_seq, K, ngram=1):
     return state_transition_counts
 
 
-def state_transition_probabilities(state_seq, K):
+def state_transition_probabilities(state_seq, num_states, normalize=True):
     """
     # bigram probabilities: state transition probabilities
     """
-    state_transition_counts = np.zeros((K, K))
+    state_transition_counts = np.zeros((num_states, num_states))
 
-    for k in range(K):
+    for k in range(num_states):
         # do not include last state seq
         idx_ = np.argwhere(state_seq[:-1] == k)
         # do not include last state seq
-        next_state, next_state_count = np.unique(state_seq[idx_ + 1], return_counts=True)
-        state_transition_counts[k, next_state] = next_state_count
+        #next_state, next_state_count = np.unique(state_seq[idx_ + 1], return_counts=True)
+        #state_transition_counts[k, next_state] = next_state_count
+        state_transition_counts[k] = np.bincount(state_seq[idx_k + 1].flatten(),
+                                                       minlength = num_states)
 
-    state_transition_counts /= state_transition_counts.sum(1, keepdims=True)
+    #state_transition_counts /= state_transition_counts.sum(1, keepdims=True)
+    if normalize:
+        # Normalize according to state transitions
+        #state_transition_counts /= state_transition_counts.sum(1, keepdims=True)
+        # Hack to ignore 0s
+        num_transitions = state_transition_counts.sum(1)
+        for k in range(num_states):
+            if num_transitions[k] > 0:
+                state_transition_counts[k] /= num_transitions[k]
     return state_transition_counts
 
 
-def multiple_state_transition_probabilities(state_seq_list, K):
+def multiple_state_transition_probabilities(state_seq_list, num_states, normalize=True):
     """
     # bigram probabilities: state transition probabilities
     """
-    state_transition_counts = np.zeros((K, K))
+    state_transition_counts = np.zeros((num_states, num_states))
 
-    for k in range(K):
+    for k in range(num_states):
         # do not include last state seq        
         for state_seq in state_seq_list:
-            idx_ = np.argwhere(state_seq[:-1] == k)
-            # do not include last state seq
-            next_state, next_state_count = np.unique(state_seq[idx_ + 1], return_counts=True)
-            state_transition_counts[k, next_state] = next_state_count
+            # find where state k is
+            idx_k = np.argwhere(state_seq[:-1] == k)
+            # count #s of other states
+            state_transition_counts[k] += np.bincount(state_seq[idx_k + 1].flatten(),
+                                                       minlength = num_states)
 
-    state_transition_counts /= state_transition_counts.sum(1, keepdims=True)
+    if normalize:
+        # Normalize according to state transitions
+        #state_transition_counts /= state_transition_counts.sum(1, keepdims=True)
+        # Hack to ignore 0s
+        num_transitions = state_transition_counts.sum(1)
+        for k in range(num_states):
+            if num_transitions[k] > 0:
+                state_transition_counts[k] /= num_transitions[k]
+
     return state_transition_counts
